@@ -4,3 +4,7 @@ rr_base_url: https://dl.bintray.com/emccode/rexray
 docker_compose_version: 1.6.0
 flocker_enabled: true
 rexray_enabled: false
+
+# real AWS creds is in encrypted secretvars.yml
+aws_accesskey: AKIAKOA
+aws_secretkey: 15c30704066cae7bb4c86c533da2824981a8cac8

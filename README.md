@@ -1,3 +1,12 @@
+This set of playbooks is used to deploy a Swarm cluster in AWS together with Flocker as volume plugin and using etcd as KV store for Docker and Swarm
+
+Versions used:
+* Ubuntu 14.04.4
+* Docker Engine 1.10.1
+* etcd 2.2.5
+* Docker Compose 1.6
+* Flocker 1.10.2
+
 Quick notes
 
 Preparation
@@ -8,6 +17,9 @@ Preparation
   aws_accesskey: AKIAKAIAKAI
   aws_secretkey: 37780ea436530e0b6053f7f1380e9c327bb8a6dc
 ```
+
+Now everything should be ready to deploy.
+
 
 Order of execution:
 

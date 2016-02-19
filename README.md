@@ -1,5 +1,14 @@
 This set of playbooks is used to deploy a Swarm cluster in AWS together with Flocker as volume plugin and using etcd as KV store for Docker and Swarm
 
+*** WORK IN PROGRESS ***
+
+Disclaimer: this is rather messy pile of playbooks, but they do their work, though setup if not really functional.
+I've opened 2 issues in Githubm regarding this setup:
+* https://github.com/docker/compose/issues/2958
+* https://github.com/docker/swarm/issues/1847
+
+One more issue is steady growth of opened flocker.sock file on nodes with swarm agent running, but I will do some more research before reporting.
+
 Versions used:
 * Ubuntu 14.04.4
 * Docker Engine 1.10.1

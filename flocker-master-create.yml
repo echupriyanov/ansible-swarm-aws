@@ -24,6 +24,9 @@
       - debug: msg={{ groups['launched']|map('extract', hostvars, 'private_ip')|list }}
       - debug: msg={{ groups['launched']|map('extract', hostvars, 'public_ip')|list }}
 
+      - name: create inventories folder if it doen't exists yet
+        file: dest=inventories state=directory
+
       - name: create hosts file for group
         template: src=hosts.j2 dest=inventories/{{basename}}-{{zone_id}}
 

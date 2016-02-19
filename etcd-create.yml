@@ -11,6 +11,7 @@
       instance_profile: ec2-linux-role
       basename: etcd
       role: etcd-cluster
+      hostgroup: etcd
       root_size: 8
       id_start: 1
       id_end: 3
@@ -23,6 +24,9 @@
 
       - debug: msg={{ groups['launched']|map('extract', hostvars, 'private_ip')|list }}
       - debug: msg={{ groups['launched']|map('extract', hostvars, 'public_ip')|list }}
+
+      - name: create inventories folder if it doen't exists yet
+        file: dest=inventories state=directory
 
       - name: create common DNS records
         include: lib/create-common-dns.yml

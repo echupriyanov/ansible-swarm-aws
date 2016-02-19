@@ -1,0 +1,15 @@
+---
+  - hosts: localhost
+    become: no
+    gather_facts: no
+    tasks:
+      - name: create folders for cfssl-based PKI
+        file: dest=cfssl/cbt/certs state=directory
+
+      - name: create ca.csr.json
+        template: src=csr-cbt-ca.json.j2 dest=cfssl/csr-cbt-ca.json
+
+      - name: generate CA cert/key
+        shell: cfssl gencert -initca cfssl/csr-cbt-ca.json | cfssljson -bare cfssl/ca
+        args:
+          creates: cfssl/ca.pem

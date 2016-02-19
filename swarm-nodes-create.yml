@@ -27,6 +27,9 @@
       - name: create common DNS records
         include: lib/create-common-dns.yml
 
+      - name: create inventories folder if it doen't exists yet
+        file: dest=inventories state=directory
+
       - ec2_remote_facts:
           region: "{{cbt_cloud.region}}"
           filters:

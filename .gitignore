@@ -1,4 +1,6 @@
 PKI
-cfssl
+/cfssl
+/cfssl.backup
 inventories/*
 secretvars.yml
+scratch*

@@ -1,0 +1,22 @@
+---
+      - name: create external DNS record
+        route53:
+          command: create
+          private_zone: no
+          overwrite: yes
+          zone: '{{cbt_cloud.domain}}'
+          record: '{{basename}}-{{zone_id}}.{{cbt_cloud.domain}}'
+          type: A
+          ttl: 60
+          value: '{{groups["launched"]|map("extract", hostvars, "public_ip")|list }}'
+
+      - name: create internal DNS record
+        route53:
+          command: create
+          private_zone: yes
+          overwrite: yes
+          zone: '{{cbt_cloud.domain}}'
+          record: '{{basename}}-{{zone_id}}.{{cbt_cloud.domain}}'
+          type: A
+          ttl: 60
+          value: '{{groups["launched"]|map("extract", hostvars, "private_ip")|list }}'

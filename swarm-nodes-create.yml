@@ -1,0 +1,49 @@
+---
+  - hosts: localhost
+    connection: local
+    gather_facts: False
+    vars_files:
+      - /Users/eric/Work/secuber/aws/docker-base/vars/amis.yml
+    vars:
+      instance_count: 2
+      instance_type: r3.large
+      instance_profile: ec2-linux-role
+      basename: swarm-node
+      role: swarm-node
+      hostgroup: '{{role}}s'
+      root_size: 16
+      id_start: 5
+      id_end: 6
+      zone_id: a
+
+    tasks:
+      - name: create an instance
+        include: lib/create_instances.yml instance_name={{item}} instance_role={{role}}
+        with_sequence: start='{{id_start}}' end='{{id_end}}' format='{{basename}}-%02d'
+
+      - debug: msg={{ groups['launched']|map('extract', hostvars, 'private_ip')|list }}
+      - debug: msg={{ groups['launched']|map('extract', hostvars, 'public_ip')|list }}
+
+      - name: create common DNS records
+        include: lib/create-common-dns.yml
+
+      - ec2_remote_facts:
+          region: "{{cbt_cloud.region}}"
+          filters:
+            instance-state-name: running
+            availability-zone: '{{cbt_cloud.region}}{{zone_id}}'
+            "tag:Role": '{{role}}'
+        register: nodes
+
+      - template: src=hosts.j2 dest=inventories/{{basename}}s-{{zone_id}}
+
+  - name: Configure instance(s)
+    hosts: launched
+    remote_user: ubuntu
+    become: True
+    gather_facts: True
+    vars_files:
+      - vars/cluster-config.yml
+    tasks:
+      - name: update instances
+        include: lib/post_create.yml

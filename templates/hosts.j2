@@ -1,0 +1,4 @@
+[{{hostgroup}}-{{zone_id}}]
+{% for host in nodes.instances %}
+{{host.tags['Name']}}.{{cbt_cloud.domain}}
+{% endfor %}

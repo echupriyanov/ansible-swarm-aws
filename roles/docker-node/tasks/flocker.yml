@@ -1,0 +1,50 @@
+---
+  - name: add ClisterHQ repository
+    apt_repository: repo='deb https://clusterhq-archive.s3.amazonaws.com/ubuntu/{{ansible_lsb["release"]}}/$(ARCH) /' state=present
+
+  - name: install flocker packages
+    apt: pkg={{item}} state=present update_cache=yes force=yes
+    with_items:
+      - clusterhq-flocker-node
+      - clusterhq-flocker-docker-plugin
+      - clusterhq-flocker-cli
+
+  # Generate node.crt and node.key in PKI.{{inventory_hostname}}
+  - include: gen_flocker_cert.yml nodename={{inventory_hostname}}
+
+  - name: create folder for flocker configs
+    file: dest=/etc/flocker state=directory
+
+  - name: install Flocker CA certificate
+    copy: src=PKI/{{zone_id}}/cluster.crt dest=/etc/flocker/cluster.crt
+
+  - name: install cert/key for node
+    copy: src=PKI/{{zone_id}}/{{inventory_hostname}}/node.{{item}} dest=/etc/flocker/node.{{item}}
+    with_items:
+      - crt
+      - key
+
+  - name: install cert/key for docker-plugin
+    copy: src=PKI/{{zone_id}}/plugin.{{item}} dest=/etc/flocker/plugin.{{item}}
+    with_items:
+      - crt
+      - key
+
+  - name: fix permissions for keys
+    file: dest=/etc/flocker/{{item}} mode=0600
+    with_items:
+      - plugin.key
+      - node.key
+
+  - name: set flocker master group name
+    set_fact:
+      flocker_master_group: 'flocker-{{zone_id}}'
+
+  - name: deploy agent config
+    template: src=agent.yml.j2 dest=/etc/flocker/agent.yml
+
+  - name: (re)start flocker services
+    service: name={{item}} state=restarted
+    with_items:
+      - flocker-dataset-agent
+      - flocker-container-agent

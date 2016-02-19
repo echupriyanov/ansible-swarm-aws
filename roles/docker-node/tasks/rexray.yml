@@ -1,0 +1,17 @@
+---
+  - name: getch RexRay deb package
+    get_url:
+      url: '{{rr_base_url}}/{{rexray_branch}}/latest/rexray-latest-x86_64.deb'
+      dest: /tmp
+
+  - name: install RexRay
+    apt: deb=/tmp/rexray-latest-x86_64.deb state=present
+
+  - name: create path for rexray config
+    file: dest=/etc/rexray state=directory
+
+  - name: set u rexray config
+    template: src=rexray.yml.j2 dest=/etc/rexray/config.yml
+
+  - name: (re) start rexray service
+    service: name=rexray state=restarted

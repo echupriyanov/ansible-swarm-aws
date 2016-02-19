@@ -1,0 +1,77 @@
+---
+  - hosts: all
+    become: true
+    remote_user: dev
+    tasks:
+      - name: add ClisterHQ repository
+        apt_repository: repo='deb https://clusterhq-archive.s3.amazonaws.com/ubuntu/{{ansible_lsb["release"]}}/$(ARCH) /' state=present
+
+      - name: install flocker packages
+        apt: pkg={{item}} state=present update_cache=yes force=yes
+        with_items:
+          - clusterhq-flocker-node
+          - clusterhq-flocker-docker-plugin
+          - clusterhq-flocker-cli
+
+      - name: Create config folder
+        file: dest=/etc/flocker state=directory mode=0700
+
+      - name: Copy cluster CA certificate
+        copy: src=PKI/cluster.crt dest=/etc/flocker/cluster.crt
+
+      - name: copy plugin key and certificate
+        copy: src=PKI/{{item}} dest=/etc/flocker/{{item}}
+        with_items:
+          - plugin.key
+          - plugin.crt
+
+      - name: Fix permissions for plugin.key
+        file: dest=/etc/flocker/plugin.key mode=0600
+
+  - hosts: control
+    become: True
+    remote_user: dev
+    tasks:
+      - name: Copy control service certificate and key
+        copy: src=PKI/control-{{inventory_hostname}}.{{item}} dest=/etc/flocker/control-service.{{item}}
+        with_items:
+          - crt
+          - key
+
+      - name: Fix permissions for control-service.key
+        file: dest=/etc/flocker/control-service.key mode=0600
+
+      - name: enable flocker control-service
+        copy: src=files/flocker-control.override dest=/etc/init/flocker-control.override
+
+      - name: add flocker-control service ports to /etc/services
+        lineinfile: dest=/etc/services line={{item}} state=present
+        with_items:
+          - "flocker-control-api	4523/tcp			# Flocker Control API port"
+          - "flocker-control-agent	4524/tcp			# Flocker Control Agent port"
+
+      - name: start flocker-control services
+        service: name=flocker-control state=restarted
+
+  - hosts: nodes
+    become: True
+    remote_user: dev
+    tasks:
+      - name: Copy node service certificate and key
+        copy: src=PKI/{{uuid}}.{{item}} dest=/etc/flocker/node.{{item}}
+        with_items:
+          - crt
+          - key
+
+      - name: Fix permissions for node.key
+        file: dest=/etc/flocker/node.key mode=0600
+
+      - name: deploy node config
+        template: src=templates/agent.yml.j2 dest=/etc/flocker/agent.yml
+
+      - name: start flocker agent services
+        service: name={{item}} state=restarted
+        with_items:
+          - flocker-dataset-agent
+          - flocker-container-agent
+          - flocker-docker-plugin

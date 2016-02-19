@@ -1,0 +1,36 @@
+---
+  - name: fetch flanneld binary
+    get_url:
+      url: https://github.com/coreos/flannel/releases/download/v{{flannel_version}}/flannel-{{flannel_version}}-linux-amd64.tar.gz
+      dest: /tmp
+
+  - name: unpack flannel
+    unarchive:
+      copy: no
+      src: /tmp/flannel-{{flannel_version}}-linux-amd64.tar.gz
+      dest: /tmp/
+
+  - name: copy binaries from archive into etcd dir
+    shell: rsync -auv /tmp/flannel-{{flannel_version}}/{{ item }} /usr/local/bin/{{item}}
+    args:
+      creates: /usr/local/bin/flanned
+    with_items:
+      - flanneld
+
+  - name: update init scripts for docker and flannled
+    copy: src={{item}} dest=/etc/init/{{item}}
+    with_items:
+      - flanneld.conf
+      - docker.conf
+    notify: restart services
+
+  - name: Copy config files for flanneld
+    template: src={{item}}.j2 dest=/etc/default/{{item}}
+    with_items:
+      - flanneld
+
+  # - name: restart services
+  #   service: name={{item}} state=restarted
+  #   with_items:
+  #     - flanneld
+  #     - docker

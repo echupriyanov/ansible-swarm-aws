@@ -1,0 +1,39 @@
+---
+  - hosts: localhost
+    connection: local
+    gather_facts: False
+    vars_files:
+      - /Users/eric/Work/secuber/aws/docker-base/vars/amis.yml
+      - vars/cluster-config.yml
+    vars:
+      instance_count: 1
+      instance_type: t2.micro
+      instance_profile: ec2-linux-role
+      basename: flocker
+      role: flocker-master
+      root_size: 8
+      id_start: 1
+      id_end: 1
+      zone_id: a
+
+    tasks:
+      - name: create an instance
+        include: lib/create_instances.yml instance_name='{{basename}}-' instance_role={{role}}
+        with_sequence: start='{{id_start}}' end='{{id_end}}' format='{{basename}}-%02d'
+
+      - debug: msg={{ groups['launched']|map('extract', hostvars, 'private_ip')|list }}
+      - debug: msg={{ groups['launched']|map('extract', hostvars, 'public_ip')|list }}
+
+      - name: create hosts file for group
+        template: src=hosts.j2 dest=inventories/{{basename}}-{{zone_id}}
+
+  - name: Configure instance(s)
+    hosts: launched
+    remote_user: ubuntu
+    become: True
+    gather_facts: True
+    vars_files:
+      - vars/cluster-config.yml
+    tasks:
+      - name: update instances
+        include: lib/post_create.yml

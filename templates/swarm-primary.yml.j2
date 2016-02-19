@@ -1,0 +1,8 @@
+version: "2"
+services:
+  image: swarm:1.1.0
+  ports:
+    - 4000:4000
+  volumes:
+    - /etc/docker/tls:/etc/docker/tls
+  command: "manage -tlsverify -tlscacert /etc/docker/tls/ca.pem -tlscert /etc/docker/tls/node.pem -tlskey /etc/docker/tls/node-key.pem --host 0.0.0.0:4000 --advertise {{inventory_hostname}}:4000 consul://{{consul_cluster}}"

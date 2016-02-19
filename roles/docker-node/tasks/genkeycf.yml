@@ -1,0 +1,33 @@
+---
+  - name: create csr.json
+    template: src=csr.json.j2 dest=cfssl/cbt/certs/{{item.id}}-csr.json
+    with_items:
+      - { id: '{{hostid}}', sans: '{{hostips}}'}
+    become: no
+    delegate_to: localhost
+
+  - name: generate keypack for nodes
+    shell: cfssl gencert -ca ../ca.pem -ca-key ../ca-key.pem -config ../ca_config.json -profile client-server {{item}}-csr.json | cfssljson -bare {{item}}
+    args:
+      chdir: cfssl/cbt/certs
+      creates: '{{item}}.pem'
+    with_items:
+      - '{{hostid}}'
+    become: no
+    delegate_to: localhost
+
+  - name: create folder for docker certs and key
+    file: dest={{docker_tls_path}} state=directory
+
+  # - name: remove stale files
+  #   file: dest=/etc/docker/tls/{{item}} state=absent
+  #   with_items:
+  #     - node.pem
+  #     - node-key.pem
+  #
+  - name: copy certs and key to docker
+    copy: src=cfssl/cbt/{{item.src}} dest=/etc/docker/tls/{{item.dest}}
+    with_items:
+      - { src: 'ca.pem', dest: 'ca.pem' }
+      - { src: 'certs/{{inventory_hostname}}.pem', dest: 'node.pem' }
+      - { src: 'certs/{{inventory_hostname}}-key.pem', dest: 'node-key.pem' }

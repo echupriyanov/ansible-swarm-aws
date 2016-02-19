@@ -1,0 +1,8 @@
+---
+  - name: figure out availability zone
+    shell: curl http://169.254.169.254/latest/meta-data/placement/availability-zone
+    register: curl_out
+
+  - name: store AZ in a var
+    set_fact:
+      zone: '{{curl_out.stdout}}'

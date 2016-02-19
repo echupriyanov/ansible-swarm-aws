@@ -1,0 +1,7 @@
+---
+  - hosts: gitlab
+    become: yes
+    remote_user: dev
+
+    roles:
+      - role: docker-node

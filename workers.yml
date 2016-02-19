@@ -1,0 +1,8 @@
+---
+  - hosts: workers
+    become: yes
+    remote_user: dev
+    vars:
+      etcd_cluster_dnsname: etcd.cybertonica.aws
+    roles:
+      - flannel

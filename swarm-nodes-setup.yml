@@ -1,0 +1,25 @@
+---
+  - hosts: swarm-nodes-a
+    become: yes
+    remote_user: dev
+    vars:
+      zone_id: a
+      flocker_enabled: true
+      rexray_enabled: false
+
+    roles:
+      - role: docker-node
+
+    tasks:
+      - name: start swarm node
+        docker:
+          image: swarm:{{swarm_version}}
+          name: swarm-node
+          env:
+            SERVICE_NAME: swarm-node
+          volumes:
+            - /etc/docker/tls:/etc/docker/tls
+          restart_policy: always
+          state: restarted
+          command: "join --advertise {{inventory_hostname}}:2376 {{swarm_etcd_url}}"
+        tags: update

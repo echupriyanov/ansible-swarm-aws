@@ -1,0 +1,82 @@
+---
+  - hosts: flocker-a
+    become: true
+    remote_user: dev
+    vars:
+      zone_id: a
+      flocker_cluster_id: cbt-flocker-{{zone_id}}
+    pre_tasks:
+      - name: add ClisterHQ repository
+        apt_repository: repo='deb https://clusterhq-archive.s3.amazonaws.com/ubuntu/{{ansible_lsb["release"]}}/$(ARCH) /' state=present
+
+      - name: install flocker packages
+        apt: pkg={{item}} state=present update_cache=yes force=yes
+        with_items:
+          - clusterhq-flocker-node
+          - clusterhq-flocker-docker-plugin
+          - clusterhq-flocker-cli
+
+      - name: create Flocker PKI folder
+        file: dest=PKI/{{zone_id}} state=directory
+        become: no
+        delegate_to: localhost
+
+      - name: create CA cert/key
+        shell: flocker-ca initialize {{flocker_cluster_id}}
+        args:
+          chdir: 'PKI/{{zone_id}}'
+          creates: cluster.crt
+        become: no
+        delegate_to: localhost
+
+      - name: create control-service cert/key
+        shell: flocker-ca create-control-certificate -o PKI/{{zone_id}} -i PKI/{{zone_id}} {{inventory_hostname}}
+        args:
+          creates: PKI/{{zone_id}}/control-{{inventory_hostname}}.crt
+        become: no
+        delegate_to: localhost
+
+      - name: create docker-plugin cert/key
+        shell: flocker-ca create-api-certificate -o PKI/{{zone_id}} -i PKI/{{zone_id}} plugin
+        args:
+          creates: PKI/{{zone_id}}/plugin.crt
+        become: no
+        delegate_to: localhost
+
+      - name: Create config folder
+        file: dest=/etc/flocker state=directory mode=0700
+
+      - name: Copy cluster CA certificate
+        copy: src=PKI/{{zone_id}}/cluster.crt dest=/etc/flocker/cluster.crt
+
+      - name: copy control node cert/key
+        copy: src=PKI/{{zone_id}}/control-{{inventory_hostname}}.{{item}} dest=/etc/flocker/control-service.{{item}}
+        with_items:
+          - crt
+          - key
+
+      - name: Fix permissions for control-service.key
+        file: dest=/etc/flocker/control-service.key mode=0600
+
+      - name: enable flocker control-service
+        copy: src=files/flocker-control.override dest=/etc/init/flocker-control.override
+
+      - name: add flocker-control service ports to /etc/services
+        lineinfile: dest=/etc/services line={{item}} state=present
+        with_items:
+          - "flocker-control-api	4523/tcp			# Flocker Control API port"
+          - "flocker-control-agent	4524/tcp			# Flocker Control Agent port"
+
+      - name: start flocker-control services
+        service: name=flocker-control state=restarted
+
+      - name: install flockerctl
+        shell: curl -sSL https://get.flocker.io |sh
+        args:
+          creates: /usr/local/bin/flockerctl
+
+      - name: deploy flockerctl env vars
+        template: src=flocker-env.sh.j2 dest=/usr/local/bin/flocker-env.sh mode=0700
+
+    roles:
+      - docker-node

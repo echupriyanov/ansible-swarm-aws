@@ -1,0 +1,13 @@
+{
+  "cluster-store": "etcd://etcd-01{{zone_id}}.{{cbt_cloud.domain}}:2379",
+  "cluster-advertise": "eth0:2376",
+  "dns": ["172.31.22.159"],
+  "tlsverify": true,
+  "tlscacert": "/etc/docker/tls/ca.pem",
+  "tlscert": "/etc/docker/tls/node.pem",
+  "tlskey": "/etc/docker/tls/node-key.pem",
+  "storage-driver": "aufs",
+  "hosts": [ "0.0.0.0:2376",
+            "unix:///var/run/docker.sock" ],
+  "labels": ["zone={{zone}}"]
+}

@@ -1,0 +1,48 @@
+---
+  # - name: get node public IP
+  #   shell: curl http://169.254.169.254/latest/meta-data/public-ipv4
+  #   register: ipdata
+  #
+  - name: gather ip list
+    set_fact:
+      hostips: ['{{inventory_hostname}}', '{{ansible_eth0.ipv4.address}}']
+
+  - name: add extra SANs to ip list (if any)
+    set_fact:
+      hostips: '{{hostips|union(extra_sans)}}'
+    when: extra_sans is defined
+
+  - include_vars: defaults/secretvars.yml
+  # - include: get-zone.yml
+  #
+  - set_fact:
+      zone: '{{cbt_cloud.region}}{{zone_id}}'
+  - debug: msg='Availability Zone {{zone}}'
+
+  - include: genkeycf.yml hostid={{inventory_hostname}}
+  - include: fixdocker.yml
+
+  - include: rexray.yml
+    when: rexray_enabled
+
+  - include: flocker.yml
+    when: flocker_enabled
+
+  - name: upgrade docker-py pip module
+    pip: name=docker-py state=latest
+
+  - name: install Docker Compose
+    get_url: url=https://github.com/docker/compose/releases/download/{{docker_compose_version}}/docker-compose-Linux-x86_64 dest=/usr/local/bin/docker-compose force=yes
+
+  - name: set exec flag on docker-compose
+    file: dest=/usr/local/bin/docker-compose mode=0755
+
+  - name: start registrator
+    docker:
+      name: registrator
+      restart_policy: always
+      net: host
+      image: gliderlabs/registrator:latest
+      command: consul://consul.cybertonica.aws:8500
+      volumes:
+        - /var/run/docker.sock:/tmp/docker.sock

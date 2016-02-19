@@ -1,0 +1,30 @@
+---
+  - hosts: localhost
+    connection: local
+    gather_facts: False
+    vars_files:
+      - /Users/eric/Work/secuber/aws/docker-base/vars/amis.yml
+      - vars/etcd-create.yml
+
+    tasks:
+    - name: Destroy Consul nodes
+      ec2:
+        key_name: "{{ssh_key}}"
+        # assign_public_ip: yes
+        region: eu-west-1
+        zone: eu-west-1a
+        group: "ssh-only"
+        # vpc_subnet_id: "{{subnet_id}}"
+        # group_id: sg-e6355882
+        instance_type: t2.nano
+        instance_profile_name: ec2-linux-role
+        image: "{{ ubuntu_ami }}"
+        wait: true
+        exact_count: 0
+        count_tag:
+          Name: '{{basename}}'
+        instance_tags:
+          Name: '{{basename}}'
+      register: ec2
+
+    - debug: var=ec2

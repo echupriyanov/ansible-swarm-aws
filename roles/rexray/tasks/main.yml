@@ -1,0 +1,8 @@
+---
+  - name: getch RexRay deb package
+    get_url:
+      url: '{{rr_base_url}}/{{rexray_branch}}/latest/rexray-latest-x86_64.deb'
+      dest: /tmp
+
+  - name: install RexRay
+    apt: deb=/tmp/rexray-latest-x86_64.deb state=present

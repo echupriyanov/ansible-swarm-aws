@@ -1,0 +1,32 @@
+---
+  - hosts: swarm-masters-a
+    become: yes
+    remote_user: dev
+    vars:
+      zone_id: a
+      extra_sans:
+        - swarm-{{zone_id}}.service.cbt
+        - swarm-{{zone_id}}.cybertonica.aws
+      etcd_cluster: etcd-a.cybertonica.aws:2379/swarm-{{zone_id}}
+      flocker_enabled: true
+      rexray_enabled: false
+
+    roles:
+      - role: docker-node
+
+    post_tasks:
+      - name: start swarm master
+        docker:
+          image: swarm:{{swarm_version}}
+          name: swarm-master
+          expose:
+            - 4000
+          ports:
+            - "4000:4000"
+          env:
+            SERVICE_NAME: swarm-{{zone_id}}
+          volumes:
+            - /etc/docker/tls:/etc/docker/tls
+          restart_policy: unless-stopped
+          command: "manage -tlsverify -tlscacert /etc/docker/tls/ca.pem -tlscert /etc/docker/tls/node.pem -tlskey /etc/docker/tls/node-key.pem --replication --host 0.0.0.0:4000 --advertise {{inventory_hostname}}:4000 {{swarm_etcd_url}}"
+        tags: update

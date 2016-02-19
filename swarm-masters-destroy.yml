@@ -1,0 +1,23 @@
+---
+  - hosts: localhost
+    connection: local
+    gather_facts: False
+    vars_files:
+      - /Users/eric/Work/secuber/aws/docker-base/vars/amis.yml
+      - vars/cluster-config.yml
+    vars:
+      basename: swarm
+      role: swarm-master
+      zone_id: a
+
+    tasks:
+      - name: Destroy instances
+        ec2:
+          region: '{{cbt_cloud.region}}'
+          zone: '{{cbt_cloud.region}}{{zone_id}}'
+          instance_profile_name: ec2-linux-role
+          wait: true
+          image: '{{docker_base_ami}}'
+          exact_count: 0
+          count_tag:
+            Role: '{{role}}'

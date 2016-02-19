@@ -1,0 +1,22 @@
+---
+  - hosts: localhost
+    connection: local
+    gather_facts: False
+    vars_files:
+      - /Users/eric/Work/secuber/aws/docker-base/vars/amis.yml
+
+    tasks:
+      - name: Provision a set of instances
+        ec2:
+          region: eu-west-1
+          zone: eu-west-1b
+          instance_type: m3.large
+          image: "{{ docker_base_ami }}"
+          instance_profile_name: ec2-linux-role
+          wait: true
+          exact_count: 0
+          count_tag:
+            Name: flocker-node
+          instance_tags:
+            Name: flocekr-node
+            Role: Storage

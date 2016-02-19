@@ -1,0 +1,11 @@
+---
+cbt_cloud:
+  region: eu-west-1
+  key_name: tchu
+  domain: cybertonica.aws
+
+cert_lifetime: 3650
+docker_tls_path: /etc/docker/tls
+swarm_version: 1.1.2
+swarm_etcd_url: etcd://etcd-01{{zone_id}}.cybertonica.aws:2379/swarm-{{zone_id}}
+# docker_etcd_url: etcd://etcd-01a.cybertonica.aws:2379

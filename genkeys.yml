@@ -1,0 +1,44 @@
+---
+  - hosts: localhost
+    gather_facts: no
+    vars:
+      cert_lifetime: 365
+    tasks:
+      - name: generate keypack for nodes
+        shell: pki.io cert new {{item}} --expiry {{cert_lifetime}} --ca docker --export {{item}}.tar.gz
+        args:
+          chdir: PKI/cybertonica.aws
+          creates: '{{item}}.tar.gz'
+        with_items: groups['workers']
+
+  - hosts: workers
+    become: true
+    remote_user: dev
+    vars:
+      docker_tls_path: /etc/docker/tls
+    tasks:
+      - name: create folder for docker certs and key
+        file: dest={{docker_tls_path}} state=directory
+
+      - name: upload certs pack
+        unarchive: src=PKI/cybertonica.aws/{{inventory_hostname}}.tar.gz dest={{docker_tls_path}} copy=yes
+
+      - name: create links
+        file: src={{docker_tls_path}}/{{inventory_hostname}}-{{item}}.pem dest={{docker_tls_path}}/node-{{item}}.pem state=link
+        with_items:
+          - cacert
+          - cert
+          - key
+
+      - name: set up docker daemon.json config
+        copy: src=daemon.json dest=/etc/docker/daemon.json
+
+      - name: remove all options from /etc/default/docker
+        lineinfile:
+          dest: /etc/default/docker
+          regexp: '^DOCKER_OPTS="(.*)"'
+          line: '#DOCKER_OPTS="\1"'
+          backrefs: true
+
+      - name: restart docker
+        service: name=docker state=restarted

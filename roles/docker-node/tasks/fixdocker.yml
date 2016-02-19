@@ -1,0 +1,12 @@
+---
+  - name: set up docker daemon.json config
+    template: src=daemon.json.j2 dest=/etc/docker/daemon.json
+    notify: restart docker
+
+  - name: remove all options from /etc/default/docker
+    lineinfile:
+      dest: /etc/default/docker
+      regexp: '^DOCKER_OPTS="(.*)"'
+      line: '#DOCKER_OPTS="\1"'
+      backrefs: true
+    notify: restart docker

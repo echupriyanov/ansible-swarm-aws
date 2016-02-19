@@ -1,0 +1,38 @@
+---
+  - name: create folder for node certificate/key
+    file: dest=PKI/{{zone_id}}/{{nodename}} state=directory
+    become: no
+    delegate_to: localhost
+
+  - name: create node certificate/key pair
+    shell: flocker-ca create-node-certificate -i PKI/{{zone_id}} -o PKI/{{zone_id}}/{{nodename}}
+    args:
+      creates: PKI/{{zone_id}}/{{nodename}}/node.crt
+    become: no
+    delegate_to: localhost
+
+  - name: get file list
+    shell: ls -1 PKI/{{zone_id}}/{{nodename}}
+    register: flist
+    become: no
+    delegate_to: localhost
+
+  - name: set node uuid fact (part 1)
+    set_fact:
+      node_uuid_ext: '{{flist.stdout_lines[0]|splitext|list}}'
+
+  - name: set node uuid fact (part 2)
+    set_fact:
+      node_uuid: '{{node_uuid_ext[0]}}'
+
+  - debug: var=node_uuid
+
+  - name: rename uuid-based names to standard node naming (part 1)
+    shell: mv PKI/{{zone_id}}/{{nodename}}/{{node_uuid}}.{{item}} PKI/{{zone_id}}/{{nodename}}/node.{{item}}
+    args:
+      creates: PKI/{{zone_id}}/{{nodename}}/node.{{item}}
+    with_items:
+      - crt
+      - key
+    become: no
+    delegate_to: localhost

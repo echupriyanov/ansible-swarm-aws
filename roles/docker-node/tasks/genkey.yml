@@ -1,0 +1,16 @@
+---
+  - name: generate keypack for nodes
+    shell: pki.io cert new {{item}} --expiry {{cert_lifetime}} --ca docker --export {{item}}.tar.gz
+    args:
+      chdir: PKI/cybertonica.aws
+      creates: '{{item}}.tar.gz'
+    with_items:
+      - '{{hostid}}'
+    become: no
+    delegate_to: localhost
+
+  - name: create folder for docker certs and key
+    file: dest={{docker_tls_path}} state=directory
+
+  - name: upload certs pack
+    unarchive: src=PKI/cybertonica.aws/{{hostid}}.tar.gz dest={{docker_tls_path}} copy=yes

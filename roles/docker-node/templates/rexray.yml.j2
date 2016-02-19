@@ -1,0 +1,14 @@
+---
+rexray:
+  storageDrivers:
+    - ec2
+  volumeDrivers:
+    - docker
+  volume:
+    mount:
+      preempt: true
+
+aws:
+    accessKey: {{aws_accesskey}}
+    secretKey: {{aws_secretkey}}
+    region:    {{cbt_cloud.region}}

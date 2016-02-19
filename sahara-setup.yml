@@ -1,0 +1,10 @@
+---
+  - hosts: sahara
+    become: yes
+    remote_user: dev
+    vars:
+      zone_id: a
+      flocker_enabled: false
+
+    roles:
+      - role: docker-node
